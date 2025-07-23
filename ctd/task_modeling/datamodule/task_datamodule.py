@@ -99,7 +99,7 @@ class TaskDataModule(pl.LightningDataModule):
             self.sampler_func = RandomSampler
             self.val_sampler_func = SequentialSampler
 
-    def prepare_data(self):
+def prepare_data(self):
         """Prepare the data for task-training
 
         All task-environments must have a generate_dataset method,
@@ -163,22 +163,24 @@ class TaskDataModule(pl.LightningDataModule):
 
         # Save the data used to train the model
         with h5py.File(fpath, "w") as h5file:
-            h5file.create_dataset("train_ics", data=ics_ds[train_inds])
-            h5file.create_dataset("valid_ics", data=ics_ds[valid_inds])
+            # CHANGE: Tensors must be moved to CPU before saving with h5py
+            h5file.create_dataset("train_ics", data=ics_ds[train_inds].cpu().numpy())
+            h5file.create_dataset("valid_ics", data=ics_ds[valid_inds].cpu().numpy())
 
-            h5file.create_dataset("train_inputs", data=inputs_ds[train_inds])
-            h5file.create_dataset("valid_inputs", data=inputs_ds[valid_inds])
+            h5file.create_dataset("train_inputs", data=inputs_ds[train_inds].cpu().numpy())
+            h5file.create_dataset("valid_inputs", data=inputs_ds[valid_inds].cpu().numpy())
 
             h5file.create_dataset(
-                "train_inputs_to_env", data=inputs_to_env_ds[train_inds]
+                "train_inputs_to_env", data=inputs_to_env_ds[train_inds].cpu().numpy()
             )
             h5file.create_dataset(
-                "valid_inputs_to_env", data=inputs_to_env_ds[valid_inds]
+                "valid_inputs_to_env", data=inputs_to_env_ds[valid_inds].cpu().numpy()
             )
 
-            h5file.create_dataset("train_targets", data=targets_ds[train_inds])
-            h5file.create_dataset("valid_targets", data=targets_ds[valid_inds])
+            h5file.create_dataset("train_targets", data=targets_ds[train_inds].cpu().numpy())
+            h5file.create_dataset("valid_targets", data=targets_ds[valid_inds].cpu().numpy())
 
+            # These are already numpy arrays, no conversion needed
             h5file.create_dataset("train_conds", data=conds_ds[train_inds])
             h5file.create_dataset("valid_conds", data=conds_ds[valid_inds])
 
@@ -188,8 +190,8 @@ class TaskDataModule(pl.LightningDataModule):
             h5file.create_dataset("train_extra", data=extra_ds[train_inds])
             h5file.create_dataset("valid_extra", data=extra_ds[valid_inds])
 
-            h5file.create_dataset("train_true_inputs", data=true_inputs_ds[train_inds])
-            h5file.create_dataset("valid_true_inputs", data=true_inputs_ds[valid_inds])
+            h5file.create_dataset("train_true_inputs", data=true_inputs_ds[train_inds].cpu().numpy())
+            h5file.create_dataset("valid_true_inputs", data=true_inputs_ds[valid_inds].cpu().numpy())
 
         # Save extra information for plotting, offline analyses etc.
         save_dict_to_pickle(extra_dict, fpath_pkl)
