@@ -112,10 +112,14 @@ class TaskTrainedWrapper(pl.LightningModule):
 
         # If a coupled environment, set the environment state
         if self.task_env.coupled_env:
-            options = {"ic_state": ics}
+            # CHANGE: Move ics to CPU for the reset call to fix motornet device mismatch
+            options = {"ic_state": ics.cpu()}
             env_states, info = self.task_env.reset(
                 batch_size=batch_size, options=options
             )
+            # CHANGE: Move the resulting state back to the correct GPU device
+            env_states = env_states.to(self.device)
+            
             env_state_list = []
             joints = []  # Joint angles
         else:
