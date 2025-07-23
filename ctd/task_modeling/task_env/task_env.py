@@ -236,7 +236,7 @@ class RandomTarget(Environment):
     def generate_dataset(self, n_samples):
         # Make target circular, change loss function to be pinned at zero
         initial_state = []
-        inputs = np.zeros((n_samples, self.n_timesteps, 3))
+        inputs = torch.zeros((n_samples, self.n_timesteps, 3), device=self.device)
 
         goal_list = []
         go_cue_list = []
