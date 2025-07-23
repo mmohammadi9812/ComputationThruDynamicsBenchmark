@@ -233,7 +233,7 @@ class RandomTarget(Environment):
             position_loss=nn.MSELoss(), pos_weight=pos_weight, act_weight=act_weight
         )
 
-    def generate_dataset(self, n_samples):
+def generate_dataset(self, n_samples):
         # Make target circular, change loss function to be pinned at zero
         initial_state = []
         inputs = torch.zeros((n_samples, self.n_timesteps, 3), device=self.device)
@@ -265,14 +265,22 @@ class RandomTarget(Environment):
             initial_state.append(info["ics_joint"])
             initial_state_xy = info["ics_xy"]
 
-            env_inputs_mat = np.zeros((self.n_timesteps, 2))
+            # Use torch.zeros on the correct device instead of np.zeros
+            env_inputs_mat = torch.zeros((self.n_timesteps, 2), device=self.device)
             if bump_trial:
                 bump_end = min(bump_time + bump_duration, self.n_timesteps)
-                env_inputs_mat[bump_time:bump_end, :] = np.array(
-                    [bump_mag * np.cos(bump_theta), bump_mag * np.sin(bump_theta)]
+                # Create the bump force as a tensor on the correct device
+                bump_force = torch.tensor(
+                    [bump_mag * np.cos(bump_theta), bump_mag * np.sin(bump_theta)],
+                    device=self.device,
+                    dtype=torch.float32
                 )
+                env_inputs_mat[bump_time:bump_end, :] = bump_force
 
-            goal_matrix = torch.zeros((self.n_timesteps, self.skeleton.space_dim))
+            # Use torch.zeros on the correct device instead of np.zeros
+            goal_matrix = torch.zeros(
+                (self.n_timesteps, self.skeleton.space_dim), device=self.device
+            )
             if catch_trial:
                 go_cue = -1
                 goal_matrix[:, :] = initial_state_xy
@@ -291,7 +299,8 @@ class RandomTarget(Environment):
 
         go_cue_list = np.array(go_cue_list)
         target_on_list = np.array(target_on_list)
-        env_inputs = np.stack(ext_inputs_list, axis=0)
+        # Use torch.stack for tensors instead of np.stack
+        env_inputs = torch.stack(ext_inputs_list, axis=0)
         extra = np.stack((target_on_list, go_cue_list), axis=1)
         conds = np.array(catch_trials)
 
@@ -327,16 +336,17 @@ class RandomTarget(Environment):
             np.random.uniform(elb_limit[0] + 30, elb_limit[1] - 30)
         )
 
-        angs = torch.tensor(np.array([sho_ang, elb_ang, 0, 0]))
-        ang_targ = torch.tensor(np.array([sho_ang_targ, elb_ang_targ, 0, 0]))
+        # Ensure tensors are created on the correct device
+        angs = torch.tensor(
+            [sho_ang, elb_ang, 0, 0], dtype=torch.float32, device=self.device
+        )
+        ang_targ = torch.tensor(
+            [sho_ang_targ, elb_ang_targ, 0, 0], dtype=torch.float32, device=self.device
+        )
 
-        target_pos = self.joint2cartesian(
-            torch.tensor(ang_targ, dtype=torch.float32, device=self.device)
-        ).chunk(2, dim=-1)[0]
+        target_pos = self.joint2cartesian(ang_targ).chunk(2, dim=-1)[0]
 
-        start_xy = self.joint2cartesian(
-            torch.tensor(angs, dtype=torch.float32, device=self.device)
-        ).chunk(2, dim=-1)[0]
+        start_xy = self.joint2cartesian(angs).chunk(2, dim=-1)[0]
 
         info = dict(
             ics_joint=angs,
