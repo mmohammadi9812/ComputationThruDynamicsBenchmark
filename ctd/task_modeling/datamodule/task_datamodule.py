@@ -99,7 +99,7 @@ class TaskDataModule(pl.LightningDataModule):
             self.sampler_func = RandomSampler
             self.val_sampler_func = SequentialSampler
 
-def prepare_data(self):
+    def prepare_data(self):
         """Prepare the data for task-training
 
         All task-environments must have a generate_dataset method,
