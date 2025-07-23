@@ -233,7 +233,7 @@ class RandomTarget(Environment):
             position_loss=nn.MSELoss(), pos_weight=pos_weight, act_weight=act_weight
         )
 
-def generate_dataset(self, n_samples):
+    def generate_dataset(self, n_samples):
         # Make target circular, change loss function to be pinned at zero
         initial_state = []
         inputs = torch.zeros((n_samples, self.n_timesteps, 3), device=self.device)
